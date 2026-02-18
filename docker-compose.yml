@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./Docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./Services/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
     command:
       - "postgres"
       - "-c"
@@ -37,7 +37,7 @@ services:
   # Data Producer Service
   producer:
     build:
-      context: ./Docker/producer
+      context: ./Services/producer
       dockerfile: Dockerfile
     container_name: docstream-producer
     environment:
