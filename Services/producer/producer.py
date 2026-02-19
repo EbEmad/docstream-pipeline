@@ -237,24 +237,111 @@ class Producer:
         logger.info(f"Created {count} new documents")
         return count
 
+    def update_statuses(self):
+        """ Update document statuses to simulate lifecycle """
+        with self.conn.cursor() as cur:
+            cur.execute("""
+                SELECT document_id, status, created_at, sent_at, viewed_at, signed_at
+                FROM documents
+                WHERE status != 'completed'
+                AND created_at < NOW() - INTERVAL '1 minute'
+                ORDER BY RANDOM()
+                LIMIT 10
+            """)
+        
+        docs=cur.fetchall()
+        updates=[]
+
+        for doc_id, status, created_at, sent_at, viewed_at, signed_at in docs:
+            if random.random()<0.7:
+                new_status, timestamp_updates = self._progress_status(
+                    status,created_at,sent_at,viewed_at,signed_at
+                )
+
+                if new_status:
+                    updates.append((new_status, *timestamp_updates, doc_id))
+        if updates:
+            execute_batch(cur, """
+                    UPDATE documents
+                    SET status = %s, sent_at = %s, viewed_at = %s,
+                        signed_at = %s, completed_at = %s
+                    WHERE document_id = %s
+                """, updates)
+            self.conn.commit()
+            logger.info(f"Updated {len(updates)} document statuses")
+        return len(updates)
+    
+
+    def _progress_status(self, current_status, created_at, sent_at, viewed_at, signed_at):
+        """Progress document to next status with timestamps"""
+
+        now=datetime.now()
+
+        if current_status=="draft":
+            return 'sent',(now,viewed_at,signed_at,None)
+        elif current_status=='sent':
+            viewed = sent_at + timedelta(minutes=random.randint(5, 60))
+            return 'viewed', (sent_at, viewed, signed_at, None)
+        
+        elif current_status=='viewed':
+            completed = (signed_at or now) + timedelta(hours=random.randint(1, 8))
+            return 'completed', (sent_at, viewed_at, signed_at, completed)
+        
+        return None, (sent_at, viewed_at, signed_at, None)
 
 
 
+    def run(self):
+        """Run producer with historical load first"""
+        logger.info("")
+        logger.info("="*70)
+        logger.info("DOCSTREAM PRODUCER")
+        logger.info("=" * 70)
+        logger.info("")
 
+        #  Load historical data
+        self.load_historical_data()
 
+        # Step 2: Wait for Debezium to process snapshot
+        time.sleep(30)
+        
+        # Step 3: Start real-time updates
+        logger.info("STARTING REAL-TIME UPDATES")
 
-def run(self):
-    """Run producer with historical load first"""
-    logger.info("")
-    logger.info("="*70)
-    logger.info("DOCSTREAM PRODUCER")
-    logger.info("=" * 70)
-    logger.info("")
+        cycle = 0
+        total_created = 0
+        total_updated = 0
 
-    #  Load historical data
-    self.load_historical_data()
+        try:
+            while True:
+                cycle+=1
+                # Create new documents
+                created=self.create_documents(self.rate)
+                total_created+=created
 
-
+                # Update existing documents
+                updated=self.update_statuses()
+                total_updated+=updated
+                if cycle % 5 == 0:
+                        logger.info(
+                            f"[Cycle {cycle:3d}] Created: {total_created:4d} | "
+                            f"Updated: {total_updated:4d}"
+                        )
+                    
+                time.sleep(60)  # Wait 1 minute
+        except KeyboardInterrupt:
+            logger.info("")
+            logger.info("=" * 70)
+            logger.info("SHUTTING DOWN")
+            logger.info("=" * 70)
+            logger.info(f"Real-time Stats:")
+            logger.info(f"  Created: {total_created:,}")
+            logger.info(f"  Updated: {total_updated:,}")
+            logger.info(f"  Cycles: {cycle}")
+            logger.info("=" * 70)
+        finally:
+            if self.conn:
+                    self.conn.close()
 
 
 if __name__ == "__main__":
