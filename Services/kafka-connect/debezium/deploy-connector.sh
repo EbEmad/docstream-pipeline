@@ -23,12 +23,20 @@ if curl -sf $KAFKA_CONNECT_URL/connectors/$CONNECTOR_NAME > /dev/null 2>&1; then
     fi
 else
     echo "Creating connector..."
-    curl -X POST $KAFKA_CONNECT_URL/connectors \
+    RESPONSE=$(curl -s -w "%{http_code}" -X POST $KAFKA_CONNECT_URL/connectors \
         -H "Content-Type: application/json" \
-        -d @/kafka-connect/postgres-connector.json
+        -d @/kafka-connect/postgres-connector.json)
     
-    sleep 5
-    echo "Connector deployed successfully."
+    HTTP_STATUS=${RESPONSE: -3}
+    BODY=${RESPONSE:0:${#RESPONSE}-3}
+
+    if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+        echo "Connector deployed successfully (HTTP $HTTP_STATUS)."
+    else
+        echo "Failed to deploy connector (HTTP $HTTP_STATUS)."
+        echo "Response body: $BODY"
+        exit 1
+    fi
 fi
 
 echo "Connector deployment complete."

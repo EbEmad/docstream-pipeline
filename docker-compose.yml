@@ -29,7 +29,7 @@ services:
         reservations:
           memory: 256m
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -142,12 +142,12 @@ services:
         reservations:
           memory: 512m
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/" ]
       interval: 10s
       timeout: 5s
       retries: 20
       start_period: 90s
-    entrypoint: ["/bin/bash", "-c"]
+    entrypoint: [ "/bin/bash", "-c" ]
     command:
       - |
         /docker-entrypoint.sh start &
@@ -194,12 +194,12 @@ services:
         reservations:
           memory: 512m
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka1:9092 || exit 1"]
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka1:9092 || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 10
       start_period: 40s
-      
+
   kafka2:
     image: confluentinc/cp-kafka:7.8.0
     hostname: kafka2
@@ -237,7 +237,7 @@ services:
         reservations:
           memory: 512m
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka2:9092 || exit 1"]
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka2:9092 || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -280,7 +280,7 @@ services:
         reservations:
           memory: 512m
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka3:9092 || exit 1"]
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server kafka3:9092 || exit 1" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -320,12 +320,11 @@ services:
         reservations:
           memory: 256m
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/subjects"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/subjects" ]
       interval: 10s
       timeout: 5s
       retries: 20
       start_period: 60s
-
 
   # ============================================
   # SPARK CLUSTER
@@ -341,8 +340,8 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
       - AWS_REGION=us-east-1
     ports:
-        - "8080:8080"
-        - "7077:7077"
+      - "8080:8080"
+      - "7077:7077"
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
     volumes:
       - ./spark_jobs:/opt/spark-jobs
@@ -362,7 +361,7 @@ services:
         max-size: "50m"
         max-file: "3"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      test: [ "CMD", "curl", "-f", "http://localhost:8080" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -378,8 +377,8 @@ services:
       - SPARK_WORKER_MEMORY=2G
       - SPARK_WORKER_CORES=2
       - SPARK_NO_DAEMONIZE=true
-    entrypoint: ["/opt/spark/bin/spark-class"]
-    command: ["org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+    entrypoint: [ "/opt/spark/bin/spark-class" ]
+    command: [ "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077" ]
     depends_on:
       spark-master:
         condition: service_healthy
@@ -416,8 +415,8 @@ services:
       - ./spark_jobs/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
     networks:
       - docstream-net
-    entrypoint: ["/opt/spark/bin/spark-class"]
-    command: ["org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+    entrypoint: [ "/opt/spark/bin/spark-class" ]
+    command: [ "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077" ]
     depends_on:
       spark-master:
         condition: service_healthy
@@ -449,8 +448,8 @@ services:
       - ./spark_jobs/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
     networks:
       - docstream-net
-    entrypoint: ["/opt/spark/bin/spark-class"]
-    command: ["org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+    entrypoint: [ "/opt/spark/bin/spark-class" ]
+    command: [ "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077" ]
     depends_on:
       spark-master:
         condition: service_healthy
@@ -479,12 +478,12 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: us-east-1
       PYTHONUNBUFFERED: 1
-    entrypoint: ["/bin/bash", "-c"]
+    entrypoint: [ "/bin/bash", "-c" ]
     command:
-      - |      
+      - |
         max_attempts=60
         attempt=0
-        
+
         # Wait for connector to be RUNNING
         until curl -s http://kafka-connect:8083/connectors/postgres-source-connector/status 2>/dev/null | grep -q '"state":"RUNNING"'; do
           attempt=$((attempt + 1))
@@ -524,15 +523,17 @@ services:
         condition: service_started
       spark3:
         condition: service_started
+    networks:
+      - docstream-net
     deploy:
       resources:
         limits:
-          memory: 768m
+          memory: 1.5g
           cpus: '1'
         reservations:
           memory: 512m
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f spark-submit && pgrep -f event_enrichment || exit 1"]
+      test: [ "CMD-SHELL", "pgrep -f spark-submit && pgrep -f event_enrichment || exit 1" ]
       interval: 60s
       timeout: 10s
       retries: 3
@@ -551,9 +552,9 @@ services:
       SPARK_WATERMARK_DELAY: "10 minutes"
       SPARK_TRIGGER_INTERVAL: "1 minute"
       PYTHONUNBUFFERED: "1"
-    entrypoint: ["/bin/bash", "-c"]
+    entrypoint: [ "/bin/bash", "-c" ]
     command:
-      - |      
+      - |
         # Wait for Iceberg table to exist
         max_attempts=60
         attempt=0
@@ -581,10 +582,12 @@ services:
         condition: service_started
       spark-job-enrichment:
         condition: service_healthy
+    networks:
+      - docstream-net
     deploy:
       resources:
         limits:
-          memory: 768m
+          memory: 1.5g
           cpus: '1'
         reservations:
           memory: 512m
@@ -594,11 +597,81 @@ services:
         max-size: "100m"
         max-file: "3"
     healthcheck:
-      test: ["CMD-SHELL", "pgrep -f spark-submit && pgrep -f realtime_aggregations || exit 1"]
+      test: [ "CMD-SHELL", "pgrep -f spark-submit && pgrep -f realtime_aggregations || exit 1" ]
       interval: 60s
       timeout: 10s
       retries: 3
       start_period: 180s
+
+  minio:
+    image: minio/minio:latest
+    container_name: docstream-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password
+    command: server /data --console-address ":9001"
+    networks:
+      - docstream-net
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.5'
+        reservations:
+          memory: 256m
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9000/minio/health/live" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MinIO Client - Create buckets
+  mc:
+    image: minio/mc:latest
+    container_name: docstream-minio-client
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c " until (/usr/bin/mc alias set minio http://minio:9000 admin password) do echo '...waiting...' && sleep 1; done; /usr/bin/mc rm -r --force minio/warehouse; /usr/bin/mc mb minio/warehouse; /usr/bin/mc rm -r --force minio/checkpoints; /usr/bin/mc mb minio/checkpoints; /usr/bin/mc policy set public minio/warehouse; /usr/bin/mc policy set public minio/checkpoints; tail -f /dev/null "
+    networks:
+      - docstream-net
+    deploy:
+      resources:
+        limits:
+          memory: 128m
+          cpus: '0.25'
+
+  # Iceberg REST Catalog
+  rest:
+    image: tabulario/iceberg-rest
+    container_name: docstream-iceberg-rest
+    ports:
+      - "8181:8181"
+    environment:
+      - AWS_ACCESS_KEY_ID=admin
+      - AWS_SECRET_ACCESS_KEY=password
+      - AWS_REGION=us-east-1
+      - CATALOG_WAREHOUSE=s3://warehouse/
+      - CATALOG_IO__IMPL=org.apache.iceberg.aws.s3.S3FileIO
+      - CATALOG_S3_ENDPOINT=http://minio:9000
+      - CATALOG_S3_PATH__STYLE__ACCESS=true
+    networks:
+      - docstream-net
+    depends_on:
+      minio:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 512m
+          cpus: '0.5'
+        reservations:
+          memory: 256m
+
 networks:
   docstream-net:
     driver: bridge

@@ -130,7 +130,7 @@ class EventEnrichment:
             validated_stream=validate_enriched_events(enriched_stream)
 
             query=validated_stream \
-                    .wrtiteStream \
+                    .writeStream \
                     .format("iceberg") \
                     .outputMode("append") \
                     .trigger(processingTime="30 seconds") \
