@@ -478,6 +478,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: us-east-1
       PYTHONUNBUFFERED: 1
+      CHECKPOINT_BASE_PATH: /tmp/checkpoints
     entrypoint: [ "/bin/bash", "-c" ]
     command:
       - |
@@ -508,6 +509,7 @@ services:
     volumes:
       - ./spark_jobs:/home/iceberg/spark-jobs
       - ./spark_jobs/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - spark-checkpoints:/tmp/checkpoints
     depends_on:
       kafka1:
         condition: service_healthy
@@ -552,6 +554,7 @@ services:
       SPARK_WATERMARK_DELAY: "10 minutes"
       SPARK_TRIGGER_INTERVAL: "1 minute"
       PYTHONUNBUFFERED: "1"
+      CHECKPOINT_BASE_PATH: /tmp/checkpoints
     entrypoint: [ "/bin/bash", "-c" ]
     command:
       - |
@@ -575,6 +578,7 @@ services:
     volumes:
       - ./spark_jobs:/home/iceberg/spark-jobs
       - ./spark_jobs/conf/spark-defaults.conf:/opt/spark/conf/spark-defaults.conf
+      - spark-checkpoints:/tmp/checkpoints
     depends_on:
       kafka1:
         condition: service_healthy
@@ -675,3 +679,6 @@ services:
 networks:
   docstream-net:
     driver: bridge
+
+volumes:
+  spark-checkpoints:

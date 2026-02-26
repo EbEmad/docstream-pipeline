@@ -27,8 +27,10 @@ graph TD
         SE -->|Write Parquet| MINIO[(MinIO S3 Storage)]
     end
 
-    subgraph "Analytics"
-        REST <-->|Metadata| SA[Spark Aggregation Job]
-        SA <-->|Queries Data| MINIO
+    subgraph "Real-time Analytics"
+        REST <-->|Metadata| RA[Real-time Aggregation Job]
+        MINIO -->|Read Enriched| RA
+        RA -->|Write Metrics| REST
+        RA -->|Store Aggregates| MINIO
     end
 ```
