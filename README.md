@@ -33,4 +33,21 @@ graph TD
         RA -->|Write Metrics| REST
         RA -->|Store Aggregates| MINIO
     end
+
+    subgraph "Search & Visualization"
+        REST <-->|Read Table| EI[Elasticsearch Indexer Job]
+        EI -->|Push Docs| ES[(Elasticsearch)]
+        ES <-->|Query| KB[Kibana]
+    end
 ```
+
+## System Services
+
+| Service | URL | Description |
+| :--- | :--- | :--- |
+| **Kafka UI** | [http://localhost:8082](http://localhost:8082) | Monitor Kafka topics, consumers, and connectors |
+| **Spark Master** | [http://localhost:8080](http://localhost:8080) | Monitor Spark jobs and worker status |
+| **MinIO Console** | [http://localhost:9001](http://localhost:9001) | S3 object storage (User: `admin`, Pass: `password`) |
+| **Kibana** | [http://localhost:5601](http://localhost:5601) | Visualize data in Elasticsearch |
+| **Elasticsearch** | [http://localhost:9200](http://localhost:9200) | REST API for search and analytics |
+| **Iceberg REST** | [http://localhost:8181](http://localhost:8181) | Iceberg catalog management |
