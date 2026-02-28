@@ -71,27 +71,16 @@ class RealtimeAggregations:
                 count("*").alias("total_updates")
             )
         
-        conversions=[
+        conversions = [
+            ("sent_to_viewed_rate", when(col("documents_sent") > 0, col("documents_viewed") / col("documents_sent")).otherwise(0.0)),
             
-            ("sent_to_viewed_rate",
-                when(col("documents_sent") > 0,
-                     col("documents_viewed") / col("documents_sent")
-                ).otherwise(0.0)
-            ),
-            ("viewed_to_signed_rate",
-                when(col("documents_viewed") > 0,
-                     col("documents_signed") / col("documents_viewed")
-                ).otherwise(0.0)
-            ),
-            (
-                "overall_completion_rate",
-                when(col("documents_sent") > 0,
-                    col("documents_completed") / col("documents_sent")
-                ).otherwise(0.0)
-            ),
+            ("viewed_to_signed_rate", when(col("documents_viewed") > 0, col("documents_signed") / col("documents_viewed")).otherwise(0.0)),
+            
+            ("overall_completion_rate", when(col("documents_sent") > 0, col("documents_completed") / col("documents_sent")).otherwise(0.0)),
+            
             ("window_start", col("window.start")),
             ("window_end", col("window.end")),
-            ("metric_date",date_format(col("window.start"), "yyyy-MM-dd")),
+            ("metric_date", date_format(col("window.start"), "yyyy-MM-dd")),
             ("metric_hour", hour(col("window.start"))),
             ("processing_timestamp", current_timestamp())
         ]
